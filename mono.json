@@ -1,0 +1,13 @@
+{
+    "source": "github",
+    "owner": "jxmono",
+    "name": "mc-dms",
+    "dependencies": [
+        "/ui.js",
+        "github/jxmono/bind/v0.4.0",
+        "github/jxmono/events/v0.4.0"
+    ],
+    "operations": [
+        { "file": "operations.js", "function": "uploadToMailchimp" }
+    ]
+}

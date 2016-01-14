@@ -141,7 +141,7 @@ function batchListSubscribe(listId, emails, callback, finishedCallback) {
         function checkResponseBody(responseBody) {
             if (responseBody.status !== 'finished') {
                 if (msPassed > maxMsToFollowBatchSubscribeStatus) {
-                    return finishedCallback("Timeout");
+                    return finishedCallback('Timeout');
                 }
                 setTimeout(function () {
                     msPassed += pollInterval;
@@ -155,8 +155,8 @@ function batchListSubscribe(listId, emails, callback, finishedCallback) {
                     }, function (err, resp, b) {
 
                         if (err || resp.statusCode !== 200) {
-                            return finishedCallback("Batch subscribe operation failed: " +
-                                    (err || JSON.stringify(b) || "Unknown error"));
+                            return finishedCallback('Batch subscribe operation failed: ' +
+                                    (err || JSON.stringify(b) || 'Unknown error'));
                         }
 
                         b = JSON.parse(b);
@@ -239,14 +239,11 @@ function addEmailsToNewList(emails, callback, finishedCallback) {
  * @return {undefined}
  */
 function uploadToMailChimp(link) {
-    var t = link.data.template;
-    var q = link.data.query;
-
     // Build the request
     var customRequest = {
         role: link.session.crudRole,
-        templateId: ObjectId(t),
-        query: q,
+        templateId: ObjectId('5651cc754d9707687fbc7591'), // pradas_clients
+        query: link.data.query,
         options: {},
         noCursor: true
     };

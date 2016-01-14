@@ -1,5 +1,5 @@
 # mc-dms
-Mailchimp module for Mono-based DMS applications
+MailChimp module for Mono-based DMS applications
 
 ## Changelog
 

@@ -8,6 +8,6 @@
         "github/jxmono/events/v0.4.0"
     ],
     "operations": [
-        { "file": "operations.js", "function": "uploadToMailchimp" }
+        { "file": "operations.js", "function": "uploadToMailChimp" }
     ]
 }

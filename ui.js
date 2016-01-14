@@ -13,15 +13,17 @@ module.exports = function (config) {
 
     self.on('setTemplate', setTemplate);
     self.on('setQuery', setQuery);
-    self.on('showMailchimpUi', showMailchimpUi);
+    self.on('showMailChimpUi', showMailChimpUi);
     self.on('hideUi', hideUi);
     self.on('upload', upload);
+    self.on('showLoadingIndicator', showLoadingIndicator);
+    self.on('hideLoadingIndicator', hideLoadingIndicator);
 
     // start by getting all the templates
     getTemplates.call(self);
 };
 
-function showMailchimpUi () {
+function showMailChimpUi () {
     var self = this;
     $(self.config['export'].ui.selectors.target).fadeIn(100);
 }
@@ -29,6 +31,16 @@ function showMailchimpUi () {
 function hideUi () {
     var self = this;
     $(self.config['export'].ui.selectors.target).fadeOut(100);
+}
+
+function showLoadingIndicator() {
+    var self = this;
+    $(self.config['export'].ui.selectors.target).find('.loading-indicator').removeClass('hidden');
+}
+
+function hideLoadingIndicator() {
+    var self = this;
+    $(self.config['export'].ui.selectors.target).find('.loading-indicator').addClass('hidden');
 }
 
 function upload () {
@@ -43,15 +55,16 @@ function upload () {
         return;
     }
 
-    self.link('uploadToMailchimp', {
-        template: self.template._id,
-        query: self.query
+    self.emit("showLoadingIndicator");
+
+    self.link('uploadToMailChimp', {
+        data: {
+            template: self.template._id,
+            query: self.query
+        }
     }, function (err) {
-        hideUi();
-        self.emit('notifications.show', {
-            type: err ? 'error' : 'info',
-            message: err ? err.error || err : 'Uploaded to Mailchimp.'
-        });
+        self.emit("hideLoadingIndicator");
+        self.emit("hideUi");
     });
 }
 

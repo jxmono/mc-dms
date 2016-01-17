@@ -4,6 +4,7 @@ var Events = require('github/jxmono/events');
 module.exports = function (config) {
     var self = this;
     self.config = config;
+    self.uploadRequestInProgress = false;
 
     // Run the binds
     for (var i = 0; i < self.config.binds.length; ++i) {
@@ -11,37 +12,34 @@ module.exports = function (config) {
     }
     Events.call(self, config);
 
+    self.$popup = $(self.config['export'].ui.selectors.target);
+    self.$loadingIndicator = self.$popup.find('.loading-indicator');
+    self.$closeBtn = self.$popup.find('.close-btn');
+
     self.on('setQuery', setQuery);
     self.on('showMailChimpUi', showMailChimpUi);
     self.on('hideUi', hideUi);
     self.on('upload', upload);
-    self.on('showLoadingIndicator', showLoadingIndicator);
-    self.on('hideLoadingIndicator', hideLoadingIndicator);
 
     // The `hideUi` selector is the close button of the MailChimp upload popup
-    $(self.config['export'].ui.selectors.hideUi).on('click', function () {
+    $(self.config['export'].ui.selectors.hideUi).add(self.$closeBtn)
+            .on('click', function () {
+        if (self.uploadRequestInProgress) { return; }
+
         hideUi.call(self);
     });
 };
 
 function showMailChimpUi () {
     var self = this;
-    $(self.config['export'].ui.selectors.target).fadeIn(100);
+    self.$popup.fadeIn(100);
 }
 
 function hideUi () {
     var self = this;
-    $(self.config['export'].ui.selectors.target).fadeOut(100);
-}
-
-function showLoadingIndicator() {
-    var self = this;
-    $(self.config['export'].ui.selectors.target).find('.loading-indicator').removeClass('hidden');
-}
-
-function hideLoadingIndicator() {
-    var self = this;
-    $(self.config['export'].ui.selectors.target).find('.loading-indicator').addClass('hidden');
+    self.$popup.fadeOut(100);
+    self.$closeBtn.addClass('disabled');
+    self.$loadingIndicator.text('Loading...').addClass('hidden');
 }
 
 function upload () {
@@ -51,16 +49,17 @@ function upload () {
         alert('No data query set for upload');
         return;
     }
-
-    self.emit("showLoadingIndicator");
+    self.uploadRequestInProgress = true;
+    self.$loadingIndicator.removeClass('hidden');
 
     self.link('uploadToMailChimp', {
         data: {
             query: self.query
         }
     }, function (err) {
-        self.emit("hideLoadingIndicator");
-        self.emit("hideUi");
+        self.$loadingIndicator.text('Upload under way, it will be done in about 5 minutes.');
+        self.$closeBtn.removeClass('disabled');
+        self.uploadRequestInProgress = false;
     });
 }
 

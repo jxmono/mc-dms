@@ -1,10 +1,12 @@
 var request = require('request');
 var ObjectId = require('mongodb').ObjectID;
 
-// Constants used below
-var apiKey = 'a27f375766d57aedac063699d4ca7794-us12';
+// These are variables that are set when the `uploadToMailChimp` operation is
+// called.
+var apiKey, apiRoot;
+
+// Constants used below:
 var pollInterval = 2000;
-var apiRoot = 'https://' + apiKey.split('-')[1] + '.api.mailchimp.com/3.0';
 var maxMsToFollowBatchSubscribeStatus = 5 * 60 * 1000; // 5 minutes
 
 /**
@@ -231,7 +233,11 @@ function addEmailsToNewList(emails, callback, finishedCallback) {
 /**
  * uploadToMailChimp
  * The actual operation that uploads to MailChimp the email addresses from the
- * `pradas_clients` template.
+ * `pradas_clients` template filtered by a query to a new MailChimp list. The
+ * `link.data` object should have the properties `query` (an object with which
+ * to filter the emails from the database) and `apiKey` (a string with the
+ * MailChimp API key with which the list creation and the batch subscribe
+ * operation should be done).
  *
  * @name uploadToMailChimp
  * @function
@@ -239,6 +245,9 @@ function addEmailsToNewList(emails, callback, finishedCallback) {
  * @return {undefined}
  */
 function uploadToMailChimp(link) {
+    apiKey = link.params.apiKey;
+    apiRoot = 'https://' + apiKey.split('-')[1] + '.api.mailchimp.com/3.0';
+
     // Build the request
     var customRequest = {
         role: link.session.crudRole,
@@ -264,7 +273,6 @@ function uploadToMailChimp(link) {
 
             if (err) { return link.send(500, err); }
 
-            // TODO: notify user about MailChimp mail list delay in the user interface
             link.send(200);
         }, function (err) {
             // TODO: send an email with Mandrill to the user doing the upload to

@@ -4,6 +4,9 @@ var Events = require('github/jxmono/events');
 module.exports = function (config) {
     var self = this;
     self.config = config;
+
+    // This variable stores `true` or `false` depending on whether an upload
+    // request is in progress or not
     self.uploadRequestInProgress = false;
 
     // Run the binds
@@ -12,17 +15,30 @@ module.exports = function (config) {
     }
     Events.call(self, config);
 
-    self.$popup = $(self.config['export'].ui.selectors.target);
-    self.$loadingIndicator = self.$popup.find('.loading-indicator');
-    self.$closeBtn = self.$popup.find('.close-btn');
+    // Set the default selectors
+    self.config.ui = self.config.ui || {};
+    self.config.ui.selectors = self.config.ui.selectors || {};
+    self.config.ui.selectors = $.extend({
+        target: '#mc_container',
+        hideUi: '.close-form',
+        loadingIndicator: '.loading-indicator',
+        closeButton: '.close-btn'
+    }, self.config.ui.selectors);
 
+    // Cache some jQuery elements
+    self.$popup = $(self.config.ui.selectors.target);
+    self.$loadingIndicator = self.$popup.find(self.config.ui.selectors.
+            loadingIndicator);
+    self.$closeBtn = self.$popup.find(self.config.ui.selectors.closeButton);
+
+    // Set up the event handlers
     self.on('setQuery', setQuery);
     self.on('showMailChimpUi', showMailChimpUi);
     self.on('hideUi', hideUi);
     self.on('upload', upload);
 
     // The `hideUi` selector is the close button of the MailChimp upload popup
-    $(self.config['export'].ui.selectors.hideUi).add(self.$closeBtn)
+    $(self.config.ui.selectors.hideUi).add(self.$closeBtn)
             .on('click', function () {
         if (self.uploadRequestInProgress) { return; }
 

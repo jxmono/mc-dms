@@ -22,11 +22,13 @@ module.exports = function (config) {
         target: '#mc_container',
         hideUi: '.close-form',
         loadingIndicator: '.loading-indicator',
-        closeButton: '.close-btn'
+        closeButton: '.close-btn',
+        listName: '.list-name'
     }, self.config.ui.selectors);
 
     // Cache some jQuery elements
     self.$popup = $(self.config.ui.selectors.target);
+    self.$listName = self.$popup.find(self.config.ui.selectors.listName);
     self.$loadingIndicator = self.$popup.find(self.config.ui.selectors.
             loadingIndicator);
     self.$closeBtn = self.$popup.find(self.config.ui.selectors.closeButton);
@@ -48,7 +50,9 @@ module.exports = function (config) {
 
 function showMailChimpUi () {
     var self = this;
-    self.$popup.fadeIn(100);
+    self.$popup.fadeIn(100, function () {
+        self.$listName.focus();
+    });
 }
 
 function hideUi () {

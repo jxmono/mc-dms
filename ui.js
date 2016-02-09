@@ -26,15 +26,18 @@ module.exports = function (config) {
         hideUi: '.close-form',
         loadingIndicator: '.loading-indicator',
         closeButton: '.close-btn',
+        uploadButton: '.upload',
         listName: '.list-name'
     }, self.config.ui.selectors);
 
     // Cache some jQuery elements
     self.$popup = $(self.config.ui.selectors.target);
-    self.$listName = self.$popup.find(self.config.ui.selectors.listName);
     self.$loadingIndicator = self.$popup.find(self.config.ui.selectors.
             loadingIndicator);
     self.$closeBtn = self.$popup.find(self.config.ui.selectors.closeButton);
+    self.$uploadBtn = self.$popup.find(self.config.ui.selectors.uploadButton);
+    self.$listName = self.$popup.find(self.config.ui.selectors.listName);
+    self.$titleBarCloseBtn = self.$popup.find(self.config.ui.selectors.hideUi);
 
     // Set up the event handlers
     self.on('setQuery', setQuery);
@@ -43,7 +46,7 @@ module.exports = function (config) {
     self.on('upload', upload);
 
     // The `hideUi` selector is the close button of the MailChimp upload popup
-    $(self.config.ui.selectors.hideUi).add(self.$closeBtn)
+    self.$titleBarCloseBtn.add(self.$closeBtn)
             .on('click', function () {
         if (self.uploadRequestInProgress) { return; }
 
@@ -94,7 +97,6 @@ function showMailChimpUi () {
 function hideUi () {
     var self = this;
     self.$popup.fadeOut(100);
-    self.$closeBtn.addClass('disabled');
     self.$loadingIndicator.addClass('hidden')
         .css('color', '');
 }
@@ -109,6 +111,7 @@ function upload () {
     self.uploadRequestInProgress = true;
     self.$loadingIndicator.text('Loading...').css('color', '')
         .removeClass('hidden');
+    self.$closeBtn.addClass('disabled');
 
     self.link('uploadToMailChimp', {
         data: {

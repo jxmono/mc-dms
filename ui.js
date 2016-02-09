@@ -17,6 +17,9 @@ module.exports = function (config) {
 
     // Set the default selectors
     self.config.ui = self.config.ui || {};
+    self.config.ui = $.extend({
+        errorColor: 'red'
+    }, self.config.ui);
     self.config.ui.selectors = self.config.ui.selectors || {};
     self.config.ui.selectors = $.extend({
         target: '#mc_container',
@@ -48,8 +51,41 @@ module.exports = function (config) {
     });
 };
 
+/**
+ * pad
+ *
+ * @name pad
+ * @function
+ * @param {String} x A string with the length 1 or 2.
+ * @return {String} `x` if it has the length 2, or `'0' + x` otherwise.
+ */
+function pad(x) {
+    return x.length === 2 ? x : ('0' + x);
+}
+
+/**
+ * getYYYYMMDDDateString
+ * Returns the current date as a string in the format YYYY-MM-DD.
+ *
+ * @name getYYYYMMDDDateString
+ * @function
+ * @return {String} The current date in the format YYYY-MM-DD.
+ */
+function getYYYYMMDDDateString() {
+    var d = new Date();
+    var yyyy = d.getFullYear().toString();
+    var mm = (d.getMonth() + 1).toString();
+    var dd = d.getDate().toString();
+    return yyyy + '.' + pad(mm) + '.' + pad(dd);
+}
+
+function getAutocompletedListName() {
+    return 'List ' + getYYYYMMDDDateString();
+}
+
 function showMailChimpUi () {
     var self = this;
+    self.$listName.val(getAutocompletedListName());
     self.$popup.fadeIn(100, function () {
         self.$listName.focus();
     });
@@ -59,7 +95,8 @@ function hideUi () {
     var self = this;
     self.$popup.fadeOut(100);
     self.$closeBtn.addClass('disabled');
-    self.$loadingIndicator.text('Loading...').addClass('hidden');
+    self.$loadingIndicator.addClass('hidden')
+        .css('color', '');
 }
 
 function upload () {
@@ -70,14 +107,23 @@ function upload () {
         return;
     }
     self.uploadRequestInProgress = true;
-    self.$loadingIndicator.removeClass('hidden');
+    self.$loadingIndicator.text('Loading...').css('color', '')
+        .removeClass('hidden');
 
     self.link('uploadToMailChimp', {
         data: {
-            query: self.query
+            query: self.query,
+            listName: self.$listName.val()
         }
     }, function (err) {
-        self.$loadingIndicator.text('Upload under way, it will be done in about 5 minutes.');
+        if (err) {
+            self.$loadingIndicator.css('color', self.config.ui.errorColor)
+                .text('Error: ' + err);
+        } else {
+            self.$loadingIndicator.css('color', '')
+                .text('Upload under way, it will be done in about 5 minutes. ' +
+                        'You can close this window now.');
+        }
         self.$closeBtn.removeClass('disabled');
         self.uploadRequestInProgress = false;
     });

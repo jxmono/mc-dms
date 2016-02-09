@@ -39,21 +39,32 @@ function getYYYYMMDDDateString() {
 
 /**
  * createList
- * Creates a new MailChimp list with the name in the format `List YYYY-MM-DD`.
+ * Creates a new MailChimp list with the given name. The given name must be a
+ * non-empty string, otherwise an error is given to the callback instead of
+ * creating the list.
  *
  * @name createList
  * @function
+ * @param {String} listName The name of the new MailChimp list.
  * @param {Function} callback The function to call after creating the list. The
  * first argument is an error or null, the second argument is the list ID of the
  * new list.
  * @return {undefined}
  */
-function createList(callback) {
+function createList(listName, callback) {
+    if (typeof listName !== 'string') {
+        return callback('The list name must be a string.');
+    }
+    listName = listName.trim();
+    if (listName.length === 0) {
+        return callback('The list name must not be empty.');
+    }
+
     var options = {
         url: apiRoot + '/lists',
         method: 'POST',
         json: {
-            name: 'List ' + getYYYYMMDDDateString(),
+            name: listName,
             contact: {
                 company: 'Brigels Resort AG',
                 address1: 'Via Plaun Rueun 44',
@@ -203,6 +214,7 @@ function batchListSubscribe(listId, emails, callback, finishedCallback) {
  *
  * @name addEmailsToNewList
  * @function
+ * @param {String} listName The name of the new MailChimp list.
  * @param {Array} emails An array of strings representing the email addresses.
  * @param {Function} callback The function to call after doing the batch
  * subscribe request. The first and only argument is an error or null.
@@ -216,12 +228,12 @@ function batchListSubscribe(listId, emails, callback, finishedCallback) {
  * is given.
  * @return {undefined}
  */
-function addEmailsToNewList(emails, callback, finishedCallback) {
+function addEmailsToNewList(listName, emails, callback, finishedCallback) {
     if (emails.length === 0) {
         return callback('No emails given');
     }
 
-    createList(function (err, listId) {
+    createList(listName, function (err, listId) {
         if (err) {
             return callback(err);
         }
@@ -269,7 +281,7 @@ function uploadToMailChimp(link) {
 
         // If the second callback is given, the progress of the batch subscribe
         // operation is followed for as long as 5 minutes
-        addEmailsToNewList(emails, function (err) {
+        addEmailsToNewList(link.data.listName, emails, function (err) {
 
             if (err) { return link.send(500, err); }
 

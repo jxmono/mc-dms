@@ -18,7 +18,8 @@ module.exports = function (config) {
     // Set the default selectors
     self.config.ui = self.config.ui || {};
     self.config.ui = $.extend({
-        errorColor: 'red'
+        errorColor: 'red',
+        popupFadeAnimationDuration: 100
     }, self.config.ui);
     self.config.ui.selectors = self.config.ui.selectors || {};
     self.config.ui.selectors = $.extend({
@@ -82,25 +83,84 @@ function getYYYYMMDDDateString() {
     return yyyy + '.' + pad(mm) + '.' + pad(dd);
 }
 
+/**
+ * getAutocompletedListName
+ * Returns the autocompleted name of the new list. It is in the format "List
+ * YYYY-MM-DD".
+ *
+ * @name getAutocompletedListName
+ * @function
+ * @return {String} The autocompleted name of the new list.
+ */
 function getAutocompletedListName() {
     return 'List ' + getYYYYMMDDDateString();
 }
 
+/**
+ * showMailChimpUi
+ * Autocompletes the default list name, opens the MC popup and focuses the list
+ * name input.
+ *
+ * @name showMailChimpUi
+ * @function
+ * @return {undefined}
+ */
 function showMailChimpUi () {
     var self = this;
+
     self.$listName.val(getAutocompletedListName());
-    self.$popup.fadeIn(100, function () {
+    self.$popup.fadeIn(self.config.ui.popupFadeAnimationDuration, function () {
         self.$listName.focus();
     });
 }
 
+/**
+ * hideUi
+ * Hides the MC popup, resets the status of the loading indicator and of the
+ * upload button.
+ *
+ * @name hideUi
+ * @function
+ * @return {undefined}
+ */
 function hideUi () {
     var self = this;
-    self.$popup.fadeOut(100);
+
+    self.$popup.fadeOut(self.config.ui.popupFadeAnimationDuration);
     self.$loadingIndicator.addClass('hidden')
         .css('color', '');
+    // The following call only activates the Upload button, the
+    // `uploadRequestInProgress` variable is already set to false at the
+    // initialization of the module or at the end of the last upload request.
+    setUploadActive.call(self, true);
 }
 
+/**
+ * setUploadActive
+ * Depending on the `state` parameter, sets the semaphore variable
+ * `self.uploadRequestInProgress` and the enabled/disabled state of the upload
+ * button.
+ *
+ * @name setUploadActive
+ * @function
+ * @param {Boolean} state The new state of the upload button.
+ * @return {undefined}
+ */
+function setUploadActive (state) {
+    var self = this;
+
+    self.uploadRequestInProgress = !state;
+    self.$uploadBtn.toggleClass('disabled', self.uploadRequestInProgress);
+}
+
+/**
+ * upload
+ * Does the MC upload request.
+ *
+ * @name upload
+ * @function
+ * @return {undefined}
+ */
 function upload () {
     var self = this;
 
@@ -108,33 +168,54 @@ function upload () {
         alert('No data query set for upload');
         return;
     }
-    self.uploadRequestInProgress = true;
     self.$loadingIndicator.text('Loading...').css('color', '')
         .removeClass('hidden');
     self.$closeBtn.addClass('disabled');
+    setUploadActive.call(self, false);
+
+    var trimmedListName = self.$listName.val().trim();
+    self.$listName.val(trimmedListName);
 
     self.link('uploadToMailChimp', {
         data: {
             query: self.query,
-            listName: self.$listName.val()
+            listName: trimmedListName
         }
     }, function (err) {
         if (err) {
             self.$loadingIndicator.css('color', self.config.ui.errorColor)
                 .text('Error: ' + err);
+            setUploadActive.call(self, true);
         } else {
             self.$loadingIndicator.css('color', '')
                 .text('Upload under way, it will be done in about 5 minutes. ' +
                         'You can close this window now.');
+            // Here we do not call the `setUploadActive` function with the
+            // `true` argument because we want only a part of its behavior
+            // (After the upload request is done, the upload button remains
+            // disabled untii the popup is opened again):
+            self.uploadRequestInProgress = false;
         }
         self.$closeBtn.removeClass('disabled');
-        self.uploadRequestInProgress = false;
     });
 }
 
-function setQuery (query, options) {
+/**
+ * setQuery
+ * Updates the database query used to make the upload request. In the Pradas CRM
+ * app this is an event handler connected to the changes of the filter in the
+ * data table (the `find` event of the `data_table` MIID) through the
+ * `pradas.mc_export.setFindData` function in the "/js/mc_export/handlers.js"
+ * file.
+ *
+ * @name setQuery
+ * @function
+ * @param {Object} query The MongoDB database query that refers to all the
+ * emails that should be uploaded to MailChimp.
+ * @return {undefined}
+ */
+function setQuery (query) {
     var self = this;
 
     self.query = query;
-    self.queryOptions = options;
 }

@@ -42,7 +42,7 @@ module.exports = function (config) {
 
     // Set up the event handlers
     self.on('setQuery', setQuery);
-    self.on('showMailChimpUi', showMailChimpUi);
+    self.on('showUi', showUi);
     self.on('hideUi', hideUi);
     self.on('upload', upload);
 
@@ -97,15 +97,15 @@ function getAutocompletedListName() {
 }
 
 /**
- * showMailChimpUi
+ * showUi
  * Autocompletes the default list name, opens the MC popup and focuses the list
  * name input.
  *
- * @name showMailChimpUi
+ * @name showUi
  * @function
  * @return {undefined}
  */
-function showMailChimpUi () {
+function showUi () {
     var self = this;
 
     self.$listName.val(getAutocompletedListName());

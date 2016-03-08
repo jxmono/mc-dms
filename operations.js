@@ -3,7 +3,7 @@ var ObjectId = require('mongodb').ObjectID;
 
 // These are variables that are set when the `uploadToMailChimp` operation is
 // called.
-var apiKey, apiRoot;
+var apiKey, apiRoot3, apiRoot2;
 
 // Constants used below:
 var pollInterval = 2000;
@@ -61,7 +61,7 @@ function createList(listName, callback) {
     }
 
     var options = {
-        url: apiRoot + '/lists',
+        url: apiRoot3 + '/lists',
         method: 'POST',
         json: {
             name: listName,
@@ -102,6 +102,53 @@ function createList(listName, callback) {
 }
 
 /**
+ * addWebhook
+ * Creates a new MailChimp list with the given name. The given name must be a
+ * non-empty string, otherwise an error is given to the callback instead of
+ * creating the list.
+ *
+ * @name addWebhook
+ * @function
+ * @param {String} listId The ID of the list to add the webhook.
+ * @param {Function} callback The function to call after creating the list webhook.
+ * @return {undefined}
+ */
+function addWebhook(listId, callback) {
+    if (typeof listId !== 'string') {
+        return callback('The list ID must be a string.');
+    }
+
+    var options = {
+        url: apiRoot2 + '/lists/webhook-add',
+        method: 'POST',
+        json: {
+            apikey: apiKey,
+            id: listId,
+            url: 'http://pradascrm.dev.jillix.net/@/api/mailchimp/processWebhookRequest',
+            actions: {
+                unsubscribe: true,
+                subscribe: false,
+                profile: false,
+                cleaned: false,
+                upemail: false,
+                campaign: false
+            }
+        }
+    };
+
+    request(options, function (error, response, body) {
+
+        if (error || response.statusCode !== 200) {
+            return callback('Failed to create webhook for MailChimp list "' + listId + '": ' + (error ||
+                        JSON.stringify(body) || 'Unknown error'));
+        }
+
+        var webhookId = body.id;
+        callback(null, webhookId);
+    });
+}
+
+/**
  * batchListSubscribe
  * Subscribes one or more email addresses to a MailChimp list identified by its
  * ID.
@@ -136,7 +183,7 @@ function batchListSubscribe(listId, emails, callback, finishedCallback) {
         });
     }
     var options = {
-        url: apiRoot + '/batches',
+        url: apiRoot3 + '/batches',
         method: 'POST',
         json: {
             operations: ops
@@ -159,7 +206,7 @@ function batchListSubscribe(listId, emails, callback, finishedCallback) {
                 setTimeout(function () {
                     msPassed += pollInterval;
                     request({
-                        url: apiRoot + '/batches/' + body.id,
+                        url: apiRoot3 + '/batches/' + body.id,
                         method: 'GET',
                         auth: {
                             user: 'any_string',
@@ -229,16 +276,21 @@ function batchListSubscribe(listId, emails, callback, finishedCallback) {
  * @return {undefined}
  */
 function addEmailsToNewList(listName, emails, callback, finishedCallback) {
+
     if (emails.length === 0) {
         return callback('No emails given');
     }
 
     createList(listName, function (err, listId) {
-        if (err) {
-            return callback(err);
-        }
 
-        batchListSubscribe(listId, emails, callback, finishedCallback);
+        if (err) { return callback(err); }
+
+        addWebhook(listId, function (err, webhookId) {
+
+            if (err) { return callback(err); }
+
+            batchListSubscribe(listId, emails, callback, finishedCallback);
+        });
     });
 }
 
@@ -258,7 +310,9 @@ function addEmailsToNewList(listName, emails, callback, finishedCallback) {
  */
 function uploadToMailChimp(link) {
     apiKey = link.params.apiKey;
-    apiRoot = 'https://' + apiKey.split('-')[1] + '.api.mailchimp.com/3.0';
+    var dc = apiKey.split('-')[1];
+    apiRoot3 = 'https://' + dc + '.api.mailchimp.com/3.0';
+    apiRoot2 = 'https://' + dc + '.api.mailchimp.com/2.0';
 
     // Build the request
     var customRequest = {

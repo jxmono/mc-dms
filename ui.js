@@ -150,7 +150,7 @@ function setUploadActive (state) {
     var self = this;
 
     self.uploadRequestInProgress = !state;
-    self.$uploadBtn.toggleClass('disabled', self.uploadRequestInProgress);
+    self.$uploadBtn.prop('disabled', self.uploadRequestInProgress);
 }
 
 /**
@@ -170,7 +170,7 @@ function upload () {
     }
     self.$loadingIndicator.text('Loading...').css('color', '')
         .removeClass('hidden');
-    self.$closeBtn.addClass('disabled');
+    self.$closeBtn.prop('disabled', true);
     setUploadActive.call(self, false);
 
     var trimmedListName = self.$listName.val().trim();
@@ -182,10 +182,12 @@ function upload () {
             listName: trimmedListName
         }
     }, function (err) {
+        self.$closeBtn.prop('disabled', false);
         if (err) {
             self.$loadingIndicator.css('color', self.config.ui.errorColor)
                 .text('Error: ' + err);
             setUploadActive.call(self, true);
+            self.$listName.focus();
         } else {
             self.$loadingIndicator.css('color', '')
                 .text('Upload under way, it will be done in about 5 minutes. ' +
@@ -193,10 +195,10 @@ function upload () {
             // Here we do not call the `setUploadActive` function with the
             // `true` argument because we want only a part of its behavior
             // (After the upload request is done, the upload button remains
-            // disabled untii the popup is opened again):
+            // disabled until the popup is opened again):
             self.uploadRequestInProgress = false;
+            self.$closeBtn.focus();
         }
-        self.$closeBtn.removeClass('disabled');
     });
 }
 

@@ -124,7 +124,7 @@ function addWebhook(listId, callback) {
         json: {
             apikey: apiKey,
             id: listId,
-            url: 'http://pradascrm.dev.jillix.net/@/api/mailchimp/processWebhookRequest',
+            url: 'http://pradascrm.jillix.net/@/api/mailchimp/processWebhookRequest',
             actions: {
                 unsubscribe: true,
                 subscribe: false,

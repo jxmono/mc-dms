@@ -88,5 +88,5 @@ application.json of a Mono application. The values of the properties inside the
 
 ## Changelog
 
-### dev
+### `v0.1.0`
  - Initial release.

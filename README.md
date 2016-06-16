@@ -88,5 +88,8 @@ application.json of a Mono application. The values of the properties inside the
 
 ## Changelog
 
+### `v0.2.0`
+ - Added first name, last name and gender merge fields and data to the MailChimp lists.
+
 ### `v0.1.0`
  - Initial release.

@@ -97,7 +97,56 @@ function createList(listName, callback) {
         }
 
         var listId = body.id;
-        callback(null, listId);
+
+        // the FNAME and LNAME are already created for a new list
+        addMergeField(listId, 'GENDER', 'Gender',  'text', true, function (err) {
+
+            if (err) { return callback(err); }
+
+            callback(null, listId);
+        });
+    });
+}
+
+/**
+ * addMergeField
+ * Creates a new merge field for an existing MailChimp list.
+ *
+ * @name addMergeField
+ * @function
+ * @param {String} listId The ID of the list to add the merge field.
+ * @param {String} tag The tag of the merge field.
+ * @param {String} name The name of the merge field.
+ * @param {String} type The type of the merge field.
+ * @param {String} isPublic Is this merge field visible in the sunbscribe form?
+ * @param {String} listId The ID of the list to add the merge field.
+ * @param {Function} callback The function to call after creating the list merge field.
+ * @return {undefined}
+ */
+function addMergeField(listId, tag, name, type, isPublic, callback) {
+
+    var options = {
+        url: apiRoot3 + '/lists/' + listId + '/merge-fields',
+        method: 'POST',
+        json: {
+            tag: tag,
+            name: name,
+            type: type,
+            public: isPublic
+        },
+        auth: {
+            user: 'any_string',
+            pass: apiKey
+        }
+    };
+
+    request(options, function (error, response, body) {
+
+        if (error || response.statusCode !== 200) {
+            return callback('Failed to add merge field "' + name + '" to the MailChimp list "' + listId + '": ' + (error || JSON.stringify(body) || 'Unknown error'));
+        }
+
+        callback(null);
     });
 }
 
@@ -169,16 +218,24 @@ function addWebhook(listId, callback) {
  * is given.
  * @return {undefined}
  */
-function batchListSubscribe(listId, emails, callback, finishedCallback) {
+function batchListSubscribe(listId, subscribers, callback, finishedCallback) {
     var ops = [];
-    for (var i = 0; i < emails.length; i++) {
+    for (var i = 0; i < subscribers.length; i++) {
+
+        subscribers[i].name = subscribers[i].name || {};
+
         ops.push({
             method: 'POST',
             path: '/lists/' + listId + '/members',
             operation_id: new Date().toString() + ' ' + (i + 1),
             body: JSON.stringify({
                 status: 'subscribed',
-                email_address: emails[i]
+                email_address: subscribers[i].email,
+                merge_fields: {
+                    FNAME: subscribers[i].name.first,
+                    LNAME: subscribers[i].name.last,
+                    GENDER: subscribers[i].gender
+                }
             })
         });
     }
@@ -326,16 +383,12 @@ function uploadToMailChimp(link) {
     // Emit the request to read the emails of the users inside the
     // `pradas_clients` template
     M.emit('crud.read', customRequest, function (err, data) {
-        if (err) { link.send(500, err); return; }
 
-        var emails = [];
-        for (var i = 0; i < data.length; i++) {
-            emails.push(data[i].email);
-        }
+        if (err) { link.send(500, err); return; }
 
         // If the second callback is given, the progress of the batch subscribe
         // operation is followed for as long as 5 minutes
-        addEmailsToNewList(link.data.listName, emails, function (err) {
+        addEmailsToNewList(link.data.listName, data, function (err) {
 
             if (err) { return link.send(500, err); }
 
